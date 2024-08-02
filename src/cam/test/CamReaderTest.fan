@@ -125,6 +125,15 @@ class CamReaderTest : Test
       a2,b2,g2"
     verifyCols(c, ["alpha",Str#,"beta",Str#,"gamma",Str#])
 
+    // test with meta and rows
+    r := CamReader(
+     "@meta foo 12
+      a,b,c
+      ".in)
+    verifyEq(r.readMeta, Str:Obj["foo":"12"])
+    verifyColsX(r.readCols, ["a",Str#, "b",Str#, "c",Str#])
+    verifyEq(r.readRow, null)
+
     // errs
     verifyColErr("")
     verifyColErr("_a")
