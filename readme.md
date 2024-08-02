@@ -40,5 +40,13 @@ r.eachRow |r| { ... }
 
 // next read roles (can skip readMeta/readCols)
 r.eachRow |r| { ... }
+
+// loop through all datasets
+r := CamReader(cam.in)
+while (r.hasDataset)
+{
+  m := r.readMeta
+  r.eachRow |r| { ... }
+}
 ```
 
