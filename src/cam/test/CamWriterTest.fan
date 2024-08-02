@@ -196,6 +196,10 @@ class CamWriterTest : Test
     cam.writeCols(["delta", "epsilon", "zeta:Bool"])
     cam.writeRow(["d1","e1",false])
     cam.writeRow(["d2","e2",true])
+    cam.writeSep
+    cam.writeCols(["a", "b"])
+    cam.writeRow(["---",55])
+    cam.writeRow(["-",88])
 
     verifyEq(buf.toStr,
      """@meta foo:Int 12
@@ -208,6 +212,10 @@ class CamWriterTest : Test
         delta,epsilon,zeta:Bool
         d1,e1,false
         d2,e2,true
+        ---
+        a,b
+        "---",55
+        "-",88
         """)
   }
 }

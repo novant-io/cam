@@ -21,17 +21,19 @@ class CamReaderTest : Test
   {
     // empty
     r := CamReader("".in)
-    verifyEq(r.readMeta, Str:Obj[:])
-    // verifyEq(g.meta.size, 0)
-    // verifyEq(g.rows.size, 0)
-    // verifyEq(g.more, false)
+    verifyEq(r.hasDataset, false)
 
     // empty with whitespace
     r = CamReader("         ".in)
-    verifyEq(r.readMeta, Str:Obj[:])
-    // verifyEq(g.meta.size, 0)
-    // verifyEq(g.rows.size, 0)
-    // verifyEq(g.more, false)
+    verifyEq(r.hasDataset, false)
+
+    // empty with newlines
+    r = CamReader(
+        "
+
+
+         ".in)
+    verifyEq(r.hasDataset, false)
   }
 
 //////////////////////////////////////////////////////////////////////////
@@ -40,9 +42,6 @@ class CamReaderTest : Test
 
   Void testMeta()
   {
-    // empty
-    verifyMeta("", Str:Obj?[:])
-
     // type:Str
     verifyMeta("@meta foo bar",     ["foo":"bar"])
     verifyMeta("@meta foo:Str bar", ["foo":"bar"])
@@ -64,6 +63,7 @@ class CamReaderTest : Test
        ["alpha":10, "beta":true, "gamma":"bar 123"])
 
     // errs
+    verifyMetaErr("")
     verifyMetaErr("@meta")
     verifyMetaErr("@meta foo")
     verifyMetaErr("@foo")
@@ -91,9 +91,6 @@ class CamReaderTest : Test
 
   Void testCols()
   {
-    // empty
-    verifyCols("", Obj[,])
-
     // basics
     verifyCols("alpha",            ["alpha",Str#])
     verifyCols("alpha,beta,gamma", ["alpha",Str#,"beta",Str#,"gamma",Str#])
@@ -129,6 +126,7 @@ class CamReaderTest : Test
     verifyCols(c, ["alpha",Str#,"beta",Str#,"gamma",Str#])
 
     // errs
+    verifyColErr("")
     verifyColErr("_a")
     verifyColErr("123")
   }
@@ -137,6 +135,7 @@ class CamReaderTest : Test
   {
     t := Obj[,]
     r := CamReader(cam.in)
+    verifyEq(r.hasDataset, true)
     r.readCols.each |v,k| { t.add(k).add(v) }
     verifyEq(t, expect)
   }
@@ -189,6 +188,25 @@ class CamReaderTest : Test
      "alpha,beta,gamma
       a1,b1,g1
       a2,b2,g2
+      a3,b3,g3
+
+
+      ".in)
+    verifyEq(r.readRow, Obj?["a1","b1","g1"])
+    verifyEq(r.readRow, Obj?["a2","b2","g2"])
+    verifyEq(r.readRow, Obj?["a3","b3","g3"])
+    verifyEq(r.readRow, null)
+
+    // mixed newlines
+    r = CamReader(
+     "alpha,beta,gamma
+
+      a1,b1,g1
+
+
+      a2,b2,g2
+
+
       a3,b3,g3
 
 
@@ -264,7 +282,22 @@ class CamReaderTest : Test
     verifyEq(r.readRow, Obj?[null,"",null])
     verifyEq(r.readRow, Obj?["",null,null])
     verifyEq(r.readRow, Obj?[null, null,""])
-     verifyEq(r.readRow, null)
+    verifyEq(r.readRow, null)
+
+    // rows with @
+    r = CamReader(
+     "@meta foo:Int 12
+      @meta bar man this is cool
+      alpha, beta, gamma:Bool
+      ,      b1,   false
+      @5,    b2,
+      100,   b3,   true".in)
+    verifyEq(r.hasDataset, true)
+    verifyEq(r.readMeta, ["foo":12, "bar":"man this is cool"])
+    verifyEq(r.readRow,  Obj?[null, "b1", false])
+    verifyEq(r.readRow,  Obj?["@5", "b2", null])
+    verifyEq(r.readRow,  Obj?["100","b3", true])
+    verifyEq(r.readRow, null)
 
     // full grid
     r = CamReader(
@@ -274,12 +307,12 @@ class CamReaderTest : Test
       ,          b1,   false
       5,         b2,
       100,       ,     true".in)
+    verifyEq(r.hasDataset, true)
     verifyEq(r.readMeta, ["foo":12, "bar":"man this is cool"])
     verifyEq(r.readRow,  [null, "b1", false])
     verifyEq(r.readRow,  [5,    "b2", null])
     verifyEq(r.readRow,  [100,  null, true])
     verifyEq(r.readRow, null)
-    verifyEq(r.hasNext, false)
   }
 
   Void testEachRowCells()
@@ -312,6 +345,7 @@ class CamReaderTest : Test
   Void testMulti()
   {
     // basics
+    rows := [,]
     r := CamReader(
      """@meta foo:Int 12
         @meta bar cool beans
@@ -325,22 +359,32 @@ class CamReaderTest : Test
         d2,e2,true
         ---
         @meta car:Bool true
+        a,b,c
         """.in)
     // dataset 1
+    verifyEq(r.hasDataset, true)
+    verifyEq(r.hasDataset, true)  // check dup calls
     verifyEq(r.readMeta, Str:Obj["foo":12, "bar":"cool beans"])
     verifyColsX(r.readCols, ["alpha",Str#, "beta",Int#, "gamma",Str#])
-    verifyEq(r.readRow, Obj?["a1", 21, "g1"])
-    verifyEq(r.readRow, Obj?["a2", 22, "g2"])
-    verifyEq(r.hasNext, true)
+    r.eachRow |row| { rows.add(row) }
+    verifyEq(rows[0], Obj?["a1", 21, "g1"])
+    verifyEq(rows[1], Obj?["a2", 22, "g2"])
     // dataset 2
+    verifyEq(r.hasDataset, true)
     verifyEq(r.readMeta, Str:Obj["zar":"one, more, time"])
     verifyColsX(r.readCols, ["delta",Str#, "epsilon",Str#, "zeta",Bool#])
-    verifyEq(r.readRow, Obj?["d1", "e1", false])
-    verifyEq(r.readRow, Obj?["d2", "e2", true])
-    verifyEq(r.hasNext, true)
+    rows.clear
+    r.eachRow |row| { rows.add(row) }
+    verifyEq(rows[0], Obj?["d1", "e1", false])
+    verifyEq(rows[1], Obj?["d2", "e2", true])
     // dataset 3
+    verifyEq(r.hasDataset, true)
     verifyEq(r.readMeta, Str:Obj["car":true])
-    verifyEq(r.hasNext, false)
+    rows.clear
+    r.eachRow |row| { rows.add(row) }
+    verifyEq(rows.size, 0)
+    verifyEq(r.hasDataset, false)
+    verifyEq(r.hasDataset, false)  // check dup calls
 
     // test leading/trailing whitespace
     r = CamReader(
@@ -352,6 +396,7 @@ class CamReaderTest : Test
 
         ---
 
+
         @meta zar "one, more, time"
         delta,epsilon,zeta:Bool
         d1,e1,false
@@ -361,22 +406,34 @@ class CamReaderTest : Test
         ---
 
         @meta car:Bool true
+        a,b,c
+
+
         """.in)
     // dataset 1
+    verifyEq(r.hasDataset, true)
+    verifyEq(r.hasDataset, true)  // check dup calls
     verifyEq(r.readMeta, Str:Obj["foo":12, "bar":"cool beans"])
     verifyColsX(r.readCols, ["alpha",Str#, "beta",Int#, "gamma",Str#])
-    verifyEq(r.readRow, Obj?["a1", 21, "g1"])
-    verifyEq(r.readRow, Obj?["a2", 22, "g2"])
-    verifyEq(r.hasNext, true)
+    r.eachRow |row| { rows.add(row) }
+    verifyEq(rows[0], Obj?["a1", 21, "g1"])
+    verifyEq(rows[1], Obj?["a2", 22, "g2"])
     // dataset 2
+    verifyEq(r.hasDataset, true)
     verifyEq(r.readMeta, Str:Obj["zar":"one, more, time"])
     verifyColsX(r.readCols, ["delta",Str#, "epsilon",Str#, "zeta",Bool#])
-    verifyEq(r.readRow, Obj?["d1", "e1", false])
-    verifyEq(r.readRow, Obj?["d2", "e2", true])
-    verifyEq(r.hasNext, true)
+    rows.clear
+    r.eachRow |row| { rows.add(row) }
+    verifyEq(rows[0], Obj?["d1", "e1", false])
+    verifyEq(rows[1], Obj?["d2", "e2", true])
     // dataset 3
+    verifyEq(r.hasDataset, true)
     verifyEq(r.readMeta, Str:Obj["car":true])
-    verifyEq(r.hasNext, false)
+    rows.clear
+    r.eachRow |row| { rows.add(row) }
+    verifyEq(rows.size, 0)
+    verifyEq(r.hasDataset, false)
+    verifyEq(r.hasDataset, false)  // check dup calls
   }
 
   private Void verifyColsX(Str:Type cols, Obj[] expect)

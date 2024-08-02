@@ -25,14 +25,29 @@
   }
 
 //////////////////////////////////////////////////////////////////////////
+// Datasets
+//////////////////////////////////////////////////////////////////////////
+
+  ** Return 'true' if stream has additional dataset(s) available.
+  Bool hasDataset()
+  {
+    // eat any leading whitespace
+    while (peek != null && peek.isSpace) read
+
+    // NOTE: we do not validate the next char;
+    // let readMeta/ReadCols do that
+    return peek != null
+  }
+
+//////////////////////////////////////////////////////////////////////////
 // Meta
 //////////////////////////////////////////////////////////////////////////
 
   ** Read all '@meta' fields from current stream position.
   Str:Obj readMeta()
   {
-    // check if we need reset for next dataset
-    checkNextSet
+    // verify remaining data
+    if (!hasDataset) throw unexpectedEos
 
     // check for meta
     meta := Str:Obj[:]
@@ -60,8 +75,8 @@
   ** Read columns and return an ordered map of column name and type.
   Str:Type readCols()
   {
-    // check if we need reset for next dataset
-    checkNextSet
+    // verify remaining data
+    if (!hasDataset) throw unexpectedEos
 
     // check if we need to eat unread meta
     if (peek == '@') readMeta
@@ -130,13 +145,27 @@
   ** the current dataset or end of stream.
   Obj?[]? readRow()
   {
-    // TODO: we check for \n here to eat trailing whitespace
-    // after a set of rows; but not sure that is right...
-    // check eos
-    if (peek == null || peek == '\n') return null
-
     // check if we need to read cols
     if (colNames == null) readCols
+
+    // eat leading whitepsace
+    while (peek != null && peek.isSpace) read
+
+    // check eos
+    if (peek == null) return null
+
+    // check for set separator
+    if (peek == '-')
+    {
+      if (read != '-') throw unexpectedChar(last)
+      if (read != '-') throw unexpectedChar(last)
+      if (read != '-') throw unexpectedChar(last)
+
+      // reset cols
+      colNames = null
+      colTypes = null
+      return null
+    }
 
     // read next row
     row := Obj?[,] { it.capacity=colNames.size }
@@ -169,55 +198,6 @@
       case Str#: return text
       default:  return type.method("fromStr").call(text)
     }
-  }
-
-//////////////////////////////////////////////////////////////////////////
-// Datasets
-//////////////////////////////////////////////////////////////////////////
-
-  ** Return 'true' if another dataset exists in this stream.
-  Bool hasNext()
-  {
-    // eat any leading whitespace
-    while (peek != null && peek.isSpace) read
-
-    a := read
-    b := read
-    c := read
-
-    // found sep
-    if (a == '-' && b == '-' && c == '-') return true
-
-    // unread back to pos
-    if (c != null) in.unreadChar(c)
-    if (b != null) in.unreadChar(b)
-    if (a != null) in.unreadChar(a)
-    return false
-  }
-
-  ** Check if we are moving to another dataset.
-  private Void checkNextSet()
-  {
-    // eat any leading newlines and whitespace
-    while (peek != null && peek.isSpace) read
-
-    // not a sep; bail here
-    if (peek != '-') return
-
-    // try to read sep
-    if (read != '-') throw unexpectedChar(last)
-    if (read != '-') throw unexpectedChar(last)
-    if (read != '-') throw unexpectedChar(last)
-
-    // eat trailing whitespace
-    while (peek == ' ') read
-
-    // eat trailing newline
-    if (read != '\n') throw unexpectedChar(last)
-
-    // reset columns
-    colNames = null
-    colTypes = null
   }
 
 //////////////////////////////////////////////////////////////////////////
@@ -308,11 +288,8 @@
 //////////////////////////////////////////////////////////////////////////
 
   private InStream in
-  private Int? last           // last char read
-  private StrBuf tempBuf      // resusable working buffer
-
-  private Str[]? colNames     // column names from last readCols
-  private Type[]? colTypes    // column types from last readCols
-
-  private Bool more := false  // is another dataset available?
+  private Int? last          // last char read
+  private StrBuf tempBuf     // resusable working buffer
+  private Str[]? colNames    // column names from last readCols
+  private Type[]? colTypes   // column types from last readCols
 }

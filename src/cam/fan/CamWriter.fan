@@ -171,6 +171,7 @@
   {
     if (val == null) return false
     if (val.isEmpty) return true
+    if (val.getSafe(0) == '-') return true
     return val.any |ch| { ch == ',' || ch == '"' || ch == '\n' || ch == '\r' }
   }
 
