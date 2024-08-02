@@ -504,6 +504,50 @@ class CamReaderTest : Test
     verifyEq(r.hasDataset, false)  // check dup calls
   }
 
+  Void testMultiEach()
+  {
+    metas := [,]
+    sets  := [,]
+
+    cr := CamReader(
+     """@meta foo:Int 12
+        @meta bar cool beans
+        alpha,beta:Int,gamma
+        a1,21,g1
+        a2,22,g2
+        ---
+        delta,epsilon,zeta:Bool
+        d1,e1,false
+        d2,e2,true
+        ---
+        @meta car:Bool true
+        a,b,c
+        """.in)
+
+    while (cr.hasDataset)
+    {
+      rows := [,]
+      metas.add(cr.readMeta)
+      cr.eachRow |r| { rows.add(r) }
+      sets.add(rows)
+    }
+
+    verifyEq(metas[0], Str:Obj["foo":12, "bar":"cool beans"])
+    verifyEq(sets[0], Obj?[
+      Obj?["a1", 21, "g1"],
+      Obj?["a2", 22, "g2"],
+    ])
+
+    verifyEq(metas[1], Str:Obj[:])
+    verifyEq(sets[1], Obj?[
+      Obj?["d1", "e1", false],
+      Obj?["d2", "e2", true],
+    ])
+
+    verifyEq(metas[2], Str:Obj["car":true])
+    verifyEq(sets[2], Obj?[,])
+  }
+
   private Void verifyColsX(Str:Type cols, Obj[] expect)
   {
     t := Obj[,]
