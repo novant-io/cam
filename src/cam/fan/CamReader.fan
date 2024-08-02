@@ -145,6 +145,20 @@
   ** the current dataset or end of stream.
   Obj?[]? readRow()
   {
+    doReadRow(0)
+  }
+
+  ** Read the next line as a map of column names to delimiter
+  ** separated values based on the last `readCols`. Return null
+  ** if at the end of the current dataset or end of stream.
+  [Str:Obj?]? readRowMap()
+  {
+    doReadRow(1)
+  }
+
+  ** Read next row into List or Map accumulator.
+  private Obj? doReadRow(Int acctype)
+  {
     // check if we need to read cols
     if (colNames == null) readCols
 
@@ -167,20 +181,34 @@
       return null
     }
 
+    // init accumulator
+    acc := acctype == 0
+      ? Obj?[,] { it.capacity=colNames.size }
+      : Str:Obj?[:]
+
     // read next row
-    row := Obj?[,] { it.capacity=colNames.size }
+    index := 0
     while (peek != null)
     {
-      type := colTypes.getSafe(row.size) ?: throw IOErr("Row width != col width")
+      type := colTypes.getSafe(index) ?: throw IOErr("Row width != col width")
       cell := readCell(type)
-      row.add(cell)
+      if (acctype == 0) ((Obj?[])acc).add(cell)
+      else
+      {
+        // omit null values from map for memory performance
+        if (cell != null) {
+          key := colNames[index]
+          ((Str:Obj?)acc).set(key, cell)
+        }
+      }
+      index++
       if (lastLineEnd) break
     }
 
     // sanity check
-    if (row.size < colNames.size) throw IOErr("Row width != col width")
+    if (index != colNames.size) throw IOErr("Row width != col width")
 
-    return row
+    return acc
   }
 
   ** Read the next cell value.

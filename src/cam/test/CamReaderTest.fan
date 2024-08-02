@@ -324,6 +324,49 @@ class CamReaderTest : Test
     verifyEq(r.readRow, null)
   }
 
+  Void testRowMap()
+  {
+   // single row
+    r := CamReader(
+     "alpha,beta,gamma
+      a1,b1,g1".in)
+    verifyEq(r.readRowMap, Str:Obj?["alpha":"a1", "beta":"b1", "gamma":"g1"])
+    verifyEq(r.readRowMap, null)
+
+    // multiple rows
+    r = CamReader(
+     "alpha,beta,gamma
+      a1,b1,g1
+      a2,b2,g2
+      a3,b3,g3".in)
+    verifyEq(r.readRowMap, Str:Obj?["alpha":"a1", "beta":"b1", "gamma":"g1"])
+    verifyEq(r.readRowMap, Str:Obj?["alpha":"a2", "beta":"b2", "gamma":"g2"])
+    verifyEq(r.readRowMap, Str:Obj?["alpha":"a3", "beta":"b3", "gamma":"g3"])
+    verifyEq(r.readRowMap, null)
+
+    // null values (omit null keys in readRowMap)
+    r = CamReader(
+     "alpha,beta,gamma
+      ,b1,g1
+      a2,b2,
+      a3,,g3".in)
+    verifyEq(r.readRowMap, Str:Obj?["beta":"b1",  "gamma":"g1"])
+    verifyEq(r.readRowMap, Str:Obj?["alpha":"a2", "beta":"b2"])
+    verifyEq(r.readRowMap, Str:Obj?["alpha":"a3", "gamma":"g3"])
+    verifyEq(r.readRowMap, null)
+
+    // types
+    r = CamReader(
+     "alpha,beta:Int,gamma:Date
+      ,5,2024-08-01
+      a2,7,
+      a3,,2024-07-31".in)
+    verifyEq(r.readRowMap, Str:Obj?["beta":5, "gamma":Date("2024-08-01")])
+    verifyEq(r.readRowMap, Str:Obj?["alpha":"a2", "beta":7])
+    verifyEq(r.readRowMap, Str:Obj?["alpha":"a3", "gamma":Date("2024-07-31")])
+    verifyEq(r.readRowMap, null)
+  }
+
   Void testEachRowCells()
   {
     rows := [,]
