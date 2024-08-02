@@ -161,7 +161,7 @@ class CamReaderTest : Test
 // Rows
 //////////////////////////////////////////////////////////////////////////
 
-  Void testRowCells()
+  Void testReadRow()
   {
     // single row
     r := CamReader(
@@ -324,7 +324,7 @@ class CamReaderTest : Test
     verifyEq(r.readRow, null)
   }
 
-  Void testRowMap()
+  Void testReadRowMap()
   {
    // single row
     r := CamReader(
@@ -367,7 +367,7 @@ class CamReaderTest : Test
     verifyEq(r.readRowMap, null)
   }
 
-  Void testEachRowCells()
+  Void testEachRow()
   {
     rows := [,]
     reader := CamReader(
@@ -381,6 +381,22 @@ class CamReaderTest : Test
     verifyEq(rows[0], Obj?["a1","b1","g1"])
     verifyEq(rows[1], Obj?["a2","b2","g2"])
     verifyEq(rows[2], Obj?["a3","b3","g3"])
+  }
+
+  Void testEachRowMap()
+  {
+    rows := [,]
+    reader := CamReader(
+     "alpha,beta,gamma
+      a1,b1,g1
+      a2,b2,g2
+      a3,b3,g3".in)
+    reader.eachRowMap |r| { rows.add(r) }
+
+    verifyEq(rows.size, 3)
+    verifyEq(rows[0], Str:Obj?["alpha":"a1", "beta":"b1", "gamma":"g1"])
+    verifyEq(rows[1], Str:Obj?["alpha":"a2", "beta":"b2", "gamma":"g2"])
+    verifyEq(rows[2], Str:Obj?["alpha":"a3", "beta":"b3", "gamma":"g3"])
   }
 
   private Void verifyRow(Str col, Str row, Obj? expect)

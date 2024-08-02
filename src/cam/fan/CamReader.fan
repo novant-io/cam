@@ -127,19 +127,6 @@
 // Rows
 //////////////////////////////////////////////////////////////////////////
 
-  ** Iterate through all the lines parsing each one into
-  ** delimited-separated values based on the last `readCols`
-  ** and calling the given callback functions.
-  Void eachRow(|Obj?[] row| f)
-  {
-    while (true)
-    {
-      row := readRow
-      if (row == null) break
-      f(row)
-    }
-  }
-
   ** Read the next line as a row of delimiter-separated values
   ** based on the last `readCols`. Return null if at the end of
   ** the current dataset or end of stream.
@@ -154,6 +141,32 @@
   [Str:Obj?]? readRowMap()
   {
     doReadRow(1)
+  }
+
+  ** Iterate through all the lines parsing each one into
+  ** delimited-separated values based on the last `readCols`
+  ** and calling the given callback functions.
+  Void eachRow(|Obj?[] row| f)
+  {
+    while (true)
+    {
+      row := readRow
+      if (row == null) break
+      f(row)
+    }
+  }
+
+  ** Iterate through all the lines parsing each one into a map
+  ** of column name to delimited-separated value based  on the
+  ** last `readCols` and calling the given callback functions.
+  Void eachRowMap(|Str:Obj?[] row| f)
+  {
+    while (true)
+    {
+      row := readRowMap
+      if (row == null) break
+      f(row)
+    }
   }
 
   ** Read next row into List or Map accumulator.
