@@ -85,35 +85,8 @@
   ** Parse column into [Str name, Type type].
   private CamCol parseCol(Str col)
   {
-    if (col.size == 0)
-      throw IOErr("Column cannot be empty")
-
-    // column defaults
-    name := col
-    Type? type := Str#
-
-    // check if type was specified
-    off  := col.index(":")
-    if (off != null)
-    {
-      name = col[0..<off]
-      qname := col[off+1..-1]
-      if (!qname.contains("::")) qname = "sys::${qname}"
-      type = Type.find(qname, false)
-      if (type == null) throw IOErr("Type not found '${qname}'")
-    }
-
-    // verify name grammar
-    name.each |ch,i|
-    {
-      if (i == 0 && !ch.isAlpha)
-        throw IOErr("Column must begin with letter '$col'")
-
-      if (!ch.isAlphaNum && ch != '_')
-        throw IOErr("Column may only contain letters, numbers, and underscore '$col'")
-    }
-
-    return CamCol(name, type)
+    if (col.size == 0) throw IOErr("Column cannot be empty")
+    return CamCol.parse(col)
   }
 
 //////////////////////////////////////////////////////////////////////////

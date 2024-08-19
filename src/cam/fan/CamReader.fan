@@ -101,32 +101,7 @@
     // read whole token first
     token := readToken(delim)
     if (token == null) throw IOErr("Expecting column def")
-    name := token
-    type := Str#
-
-    // then check for type declaration
-    i := token.index(":")
-    if (i != null)
-    {
-      name = token[0..<i]
-      qname := token[i+1..-1]
-      if (!qname.contains("::")) qname = "sys::${qname}"
-      list := false
-      if (qname.endsWith("[]"))
-      {
-        list = true
-        qname = qname[0..-3]
-      }
-      type = Type.find(qname)
-      if (list) type = type.toListOf
-    }
-
-    // verify name
-    if (name.size == 0) throw IOErr("Column name cannot be empty")
-    if (!name[0].isAlpha) throw IOErr("Column name must being with letter '${name}'")
-    if (!name.all |c| { c.isAlphaNum || c == '_' }) throw IOErr("Invalid column name '${name}'")
-
-    return CamCol(name, type)
+    return CamCol.parse(token)
   }
 
 //////////////////////////////////////////////////////////////////////////

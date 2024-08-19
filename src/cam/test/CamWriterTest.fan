@@ -145,8 +145,8 @@ class CamWriterTest : Test
     verifyColErr("\"foo\"")      // quoted
     verifyColErr("foo bar")      // spaces
     verifyColErr("foo bar")      // spaces
-    verifyColErr("foo:Integer")  // type not found
-    verifyColErr("foo:sy::Int")  // type not found
+    verifyColErr("foo:Integer", UnknownTypeErr#)  // type not found
+    verifyColErr("foo:sy::Int", UnknownPodErr#)   // type not found
   }
 
   private Void verifyColOk(Str col)
@@ -156,9 +156,9 @@ class CamWriterTest : Test
     cam.writeCols([col])
   }
 
-  private Void verifyColErr(Str col)
+  private Void verifyColErr(Str col, Type err := IOErr#)
   {
-    verifyErr(IOErr#) {
+    verifyErr(err) {
       buf := StrBuf()
       cam := CamWriter(buf.out)
       cam.writeCols([col])
