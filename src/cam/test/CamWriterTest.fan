@@ -60,16 +60,17 @@ class CamWriterTest : Test
     // list rows
     buf = StrBuf()
     cam = CamWriter(buf.out)
-    cam.writeCols(["a:Bool[]"])
-    // cam.writeRow([null,              ])
-    cam.writeRow([[true]            ])
-    cam.writeRow([[true,false]      ])
-    cam.writeRow([[true,false,true] ])
+    cam.writeCols(["a:Bool[]", "b:Int[]", "c:Str[]"])
+    cam.writeRow([null,              null    , null          ])
+    cam.writeRow([[true]           , [5]     , ["a"]         ])
+    cam.writeRow([[true,false]     , [1,2]   , ["a","b"]     ])
+    cam.writeRow([[true,false,true], [5,7,10], ["a","b","c"] ])
     verifyEq(buf.toStr,
-     """a:Bool[]
-        true
-        "true, false"
-        "true, false, true"
+     """a:Bool[],b:Int[],c:Str[]
+        ,,
+        "true","5","a"
+        "true,false","1,2","a,b"
+        "true,false,true","5,7,10","a,b,c"
         """)
   }
 

@@ -119,22 +119,51 @@
     // no output if null
     if (val == null) return
 
-    // convert to string
-    str := col.list
-      ? val.toStr[1..-2]   // TODO: more efficient way todo this?
-      : val.toStr
-
-    // check if we need to quotes
-    if (isQuoteReq(str))
+    // check for list
+    if (col.list)
     {
-      // enclose and escape with quotes
+      // list types are always quoted
       out.writeChar('"')
+      List list := val
+      list.each |item,i|
+      {
+        if (i > 0) out.writeChar(',')
+        writeVal(item, true)
+      }
+      out.writeChar('"')
+    }
+    else
+    {
+      str := val.toStr
+      // check if we need to quotes
+      if (isQuoteReq(str))
+      {
+        // enclose and escape with quotes
+        out.writeChar('"')
+        writeVal(str, true)
+        out.writeChar('"')
+      }
+      else
+      {
+        // print raw string value
+        writeVal(str, false)
+      }
+    }
+  }
+
+  private Void writeVal(Obj? val, Bool quoted)
+  {
+    if (val == null) return
+
+    str := val.toStr
+    if (quoted)
+    {
+      // escape quote chars
       str.each |ch|
       {
         if (ch == '"') out.writeChar('"')
         out.writeChar(ch)
       }
-      out.writeChar('"')
     }
     else
     {
