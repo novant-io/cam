@@ -215,12 +215,17 @@
 
     if (col.list)
     {
+      // init list (assume for small lists?)
+      val := List(col.listType, 10)
+
+      // short-circut if empty list
+      if (text.isEmpty) return val
+
       // check for list type
-      acc := Int[,]
       text.split(',').each |s| {
-        acc.add(parseCell(s, col.listType))
+        val.add(parseCell(s, col.listType))
       }
-      return acc
+      return val
     }
     else
     {

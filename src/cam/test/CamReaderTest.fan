@@ -271,10 +271,12 @@ class CamReaderTest : Test
           ,5,2024-08-01
           a2,,
           a3,"1,2,3,4",2024-07-31
+          a4,"",2024-08-02
           |>.in)
     verifyEq(r.readRow, Obj?[null, Int[5], Date("2024-08-01")])
     verifyEq(r.readRow, Obj?["a2", null, null])
     verifyEq(r.readRow, Obj?["a3", Int[1,2,3,4], Date("2024-07-31")])
+    verifyEq(r.readRow, Obj?["a4", Int[,],       Date("2024-08-02")])
     verifyEq(r.readRow, null)
 
     // escaping (quoted)
