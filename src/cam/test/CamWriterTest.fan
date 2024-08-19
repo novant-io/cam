@@ -56,6 +56,21 @@ class CamWriterTest : Test
         alpha,,false
         beta bar,100,
         """)
+
+    // list rows
+    buf = StrBuf()
+    cam = CamWriter(buf.out)
+    cam.writeCols(["a:Bool[]"])
+    // cam.writeRow([null,              ])
+    cam.writeRow([[true]            ])
+    cam.writeRow([[true,false]      ])
+    cam.writeRow([[true,false,true] ])
+    verifyEq(buf.toStr,
+     """a:Bool[]
+        true
+        "true, false"
+        "true, false, true"
+        """)
   }
 
   Void testSingleNullRow()

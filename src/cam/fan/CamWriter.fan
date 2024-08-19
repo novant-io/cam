@@ -28,9 +28,9 @@
   {
     k := parseCol(key)
     out.print("@meta ")
-    writeCol(k.name, k.type)
+    writeCol(k)
     out.writeChar(' ')
-    writeCell(val, Str#)
+    writeCell(val, k)
     out.writeChar('\n')
     return this
   }
@@ -63,7 +63,7 @@
     this.cols.each |c,i|
     {
       if (i > 0) out.writeChar(',')
-      writeCol(c.name, c.type)
+      writeCol(c)
     }
 
     out.writeChar('\n')
@@ -71,14 +71,18 @@
   }
 
   ** Print column name and type (if not Str#)
-  private Void writeCol(Str name, Type type)
+  private Void writeCol(CamCol col)
   {
-    out.print(name)
-    if (type != Str#)
+    out.print(col.name)
+    if (col.type != Str#)
     {
       out.writeChar(':')
-      if (type.pod.name == "sys") out.print(type.name)
-      else out.print(type.qname)
+      if (col.type.pod.name != "sys")
+        out.print(col.type.pod.name).print("::")
+      if (col.list)
+        out.print(col.listType.name).print("[]")
+      else
+        out.print(col.type.name)
     }
   }
 
@@ -103,25 +107,29 @@
     {
       val := row[i]
       if (i > 0) out.writeChar(',')
-      writeCell(val, c.type)
+      writeCell(val, c)
     }
 
     out.writeChar('\n')
     return this
   }
 
-  private Void writeCell(Obj? val, Type type)
+  private Void writeCell(Obj? val, CamCol col)
   {
     // no output if null
     if (val == null) return
 
-    // convert to string and check if we need quotes
-    str := val.toStr
+    // convert to string
+    str := col.list
+      ? val.toStr[1..-2]   // TODO: more efficient way todo this?
+      : val.toStr
+
+    // check if we need to quotes
     if (isQuoteReq(str))
     {
       // enclose and escape with quotes
       out.writeChar('"')
-      val.toStr.each |ch|
+      str.each |ch|
       {
         if (ch == '"') out.writeChar('"')
         out.writeChar(ch)
