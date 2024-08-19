@@ -58,9 +58,9 @@
       {
         case "@meta":
           key := readCol(' ')
-          val := readCell(key.last)
-          if (val == null) throw IOErr("Missing @meta value for '${key.first}'")
-          meta[key.first] = val
+          val := readCell(key)
+          if (val == null) throw IOErr("Missing @meta value for '${key.name}'")
+          meta[key.name] = val
 
         default: throw IOErr("Unsupported directive '@${op}'")
       }
@@ -81,23 +81,22 @@
     // check if we need to eat unread meta
     if (peek == '@') readMeta
 
+    this.cols = CamCol[,]
     cmap := Str:Type[:] { it.ordered=true }
+
     while (peek != null)
     {
       c := readCol
-      cmap[c.first] = c.last
+      this.cols.add(c)
+      cmap[c.name] = c.type
       if (lastLineEnd) break
     }
-
-    // stash col meta for readRows
-    this.colNames = cmap.keys
-    this.colTypes = cmap.vals
 
     return cmap
   }
 
   ** Read column and return [Str name, Type type].
-  private Obj[] readCol(Int delim := ',')
+  private CamCol readCol(Int delim := ',')
   {
     // read whole token first
     token := readToken(delim)
@@ -112,7 +111,14 @@
       name = token[0..<i]
       qname := token[i+1..-1]
       if (!qname.contains("::")) qname = "sys::${qname}"
+      list := false
+      if (qname.endsWith("[]"))
+      {
+        list = true
+        qname = qname[0..-3]
+      }
       type = Type.find(qname)
+      if (list) type = type.toListOf
     }
 
     // verify name
@@ -120,7 +126,7 @@
     if (!name[0].isAlpha) throw IOErr("Column name must being with letter '${name}'")
     if (!name.all |c| { c.isAlphaNum || c == '_' }) throw IOErr("Invalid column name '${name}'")
 
-    return [name, type]
+    return CamCol(name, type)
   }
 
 //////////////////////////////////////////////////////////////////////////
@@ -173,7 +179,7 @@
   private Obj? doReadRow(Int acctype)
   {
     // check if we need to read cols
-    if (colNames == null) readCols
+    if (cols == null) readCols
 
     // eat leading whitepsace
     while (peek != null && peek.isSpace) read
@@ -189,28 +195,27 @@
       if (read != '-') throw unexpectedChar(last)
 
       // reset cols
-      colNames = null
-      colTypes = null
+      cols = null
       return null
     }
 
     // init accumulator
     acc := acctype == 0
-      ? Obj?[,] { it.capacity=colNames.size }
+      ? Obj?[,] { it.capacity=cols.size }
       : Str:Obj?[:]
 
     // read next row
     index := 0
     while (peek != null)
     {
-      type := colTypes.getSafe(index) ?: throw IOErr("Row width != col width")
-      cell := readCell(type)
+      col  := cols.getSafe(index) ?: throw IOErr("Row width != col width")
+      cell := readCell(col)
       if (acctype == 0) ((Obj?[])acc).add(cell)
       else
       {
         // omit null values from map for memory performance
         if (cell != null) {
-          key := colNames[index]
+          key := cols[index].name
           ((Str:Obj?)acc).set(key, cell)
         }
       }
@@ -219,13 +224,13 @@
     }
 
     // sanity check
-    if (index != colNames.size) throw IOErr("Row width != col width")
+    if (index != cols.size) throw IOErr("Row width != col width")
 
     return acc
   }
 
   ** Read the next cell value.
-  private Obj? readCell(Type type)
+  private Obj? readCell(CamCol col)
   {
     // read raw text
     text := readToken
@@ -233,11 +238,28 @@
     // unqouted empty text is always null
     if (text == null) return null
 
-    // parse text based on 'type'
+    if (col.list)
+    {
+      // check for list type
+      acc := Int[,]
+      text.split(',').each |s| {
+        acc.add(parseCell(s, col.listType))
+      }
+      return acc
+    }
+    else
+    {
+      // else parse raw text
+      return parseCell(text, col.type)
+    }
+  }
+
+  private Obj parseCell(Str text, Type type)
+  {
     switch (type)
     {
       case Str#: return text
-      default:  return type.method("fromStr").call(text)
+      default:   return type.method("fromStr").call(text)
     }
   }
 
@@ -331,6 +353,5 @@
   private InStream in
   private Int? last          // last char read
   private StrBuf tempBuf     // resusable working buffer
-  private Str[]? colNames    // column names from last readCols
-  private Type[]? colTypes   // column types from last readCols
+  private CamCol[]? cols     // columns from last readCols
 }

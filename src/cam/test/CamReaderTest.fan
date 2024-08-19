@@ -112,6 +112,8 @@ class CamReaderTest : Test
     verifyCols("a:sys::Int",  ["a",Int#])
     verifyCols("a:Date",      ["a",Date#])
     verifyCols("a:sys::Date", ["a",Date#])
+    verifyCols("a:Int[]",     ["a",Int[]#])
+    verifyCols("a:sys::Bool[]", ["a",Bool[]#])
     verifyCols("a:concurrent::AtomicBool", Obj["a",Type.find("concurrent::AtomicBool")])
     verifyCols(Str<|"a:sys::Str"|>,  ["a",Str#])
     verifyCols(Str<|"a:Int"|>,       ["a",Int#])
@@ -245,6 +247,18 @@ class CamReaderTest : Test
     verifyEq(r.readRow, Obj?[null, 5,    Date("2024-08-01")])
     verifyEq(r.readRow, Obj?["a2", 7,    null])
     verifyEq(r.readRow, Obj?["a3", null, Date("2024-07-31")])
+    verifyEq(r.readRow, null)
+
+    // list types
+    r = CamReader(
+     Str<|alpha,beta:Int[],gamma:Date
+          ,5,2024-08-01
+          a2,,
+          a3,"1,2,3,4",2024-07-31
+          |>.in)
+    verifyEq(r.readRow, Obj?[null, Int[5], Date("2024-08-01")])
+    verifyEq(r.readRow, Obj?["a2", null, null])
+    verifyEq(r.readRow, Obj?["a3", Int[1,2,3,4], Date("2024-07-31")])
     verifyEq(r.readRow, null)
 
     // escaping (quoted)
