@@ -16,7 +16,7 @@
   new make(OutStream out)
   {
     this.out  = out
-    this.cmap = Str:Type[:] { it.ordered=true }
+    this.cols = CamCol[,]
   }
 
 //////////////////////////////////////////////////////////////////////////
@@ -28,7 +28,7 @@
   {
     k := parseCol(key)
     out.print("@meta ")
-    writeCol(k.first, k.last)
+    writeCol(k.name, k.type)
     out.writeChar(' ')
     writeCell(val, Str#)
     out.writeChar('\n')
@@ -50,22 +50,20 @@
   ** Print column headers row. To type a column, append
   ** a colon and the type name: 'foo:Int'
   **
-  This writeCols(Str[] cols)
+  This writeCols(Str[] columns)
   {
     // first parse columns and verify grammar
-    cmap.clear
-    cols.each |c|
+    this.cols.clear
+    columns.each |c|
     {
-      p :=  parseCol(c)
-      cmap[p.first] = p.last
+      this.cols.add(parseCol(c))
     }
 
     // then render row
-    cmap.keys.each |c,i|
+    this.cols.each |c,i|
     {
       if (i > 0) out.writeChar(',')
-      t := cmap[c]
-      writeCol(c, t)
+      writeCol(c.name, c.type)
     }
 
     out.writeChar('\n')
@@ -85,7 +83,7 @@
   }
 
   ** Parse column into [Str name, Type type].
-  private Obj[] parseCol(Str col)
+  private CamCol parseCol(Str col)
   {
     if (col.size == 0)
       throw IOErr("Column cannot be empty")
@@ -115,7 +113,7 @@
         throw IOErr("Column may only contain letters, numbers, and underscore '$col'")
     }
 
-    return [name, type]
+    return CamCol(name, type)
   }
 
 //////////////////////////////////////////////////////////////////////////
@@ -126,15 +124,13 @@
   This writeRow(Obj?[] row)
   {
     // must match last writeCols
-    if (row.size != cmap.size) throw IOErr("Row.size != col.size")
+    if (row.size != cols.size) throw IOErr("Row.size != col.size")
 
-    cmap.keys.each |c,i|
+    cols.each |c,i|
     {
-      type := cmap[c]
-      val  := row[i]
-
+      val := row[i]
       if (i > 0) out.writeChar(',')
-      writeCell(val, type)
+      writeCell(val, c.type)
     }
 
     out.writeChar('\n')
@@ -179,6 +175,6 @@
 // Fields
 //////////////////////////////////////////////////////////////////////////
 
-  private OutStream out   // wrapped outstream
-  private Str:Type cmap   // map of column name:Type based on last 'writeCols'
+  private OutStream out    // wrapped outstream
+  private CamCol[] cols    // columns based last 'writeCols'
 }
