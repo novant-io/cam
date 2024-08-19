@@ -238,6 +238,22 @@ class CamReaderTest : Test
     verifyEq(r.readRow, Obj?["a3",null,"g3"])
     verifyEq(r.readRow, null)
 
+// TODO: we might need to disallow this unless we tighten
+//       other rules about empty lines?
+    // // empy null row values
+    // r = CamReader(
+    //  "foo
+
+
+    //   n1
+
+    //   ".in)
+    // verifyEq(r.readRow, Obj?[null])
+    // verifyEq(r.readRow, Obj?[null])
+    // verifyEq(r.readRow, Obj?["n1"])
+    // verifyEq(r.readRow, Obj?[null])
+    // verifyEq(r.readRow, null)
+
     // types
     r = CamReader(
      "alpha,beta:Int,gamma:Date

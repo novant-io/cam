@@ -58,6 +58,26 @@ class CamWriterTest : Test
         """)
   }
 
+  Void testSingleNullRow()
+  {
+// TODO: see note in CamReaderTest - not sure this is allowed
+    // // rows
+    // buf := StrBuf()
+    // cam := CamWriter(buf.out)
+    // cam.writeCols(["foo"])
+    // cam.writeRow([null])
+    // cam.writeRow([null])
+    // cam.writeRow(["beta"])
+    // cam.writeRow([null])
+    // verifyEq(buf.toStr,
+    //  """foo
+
+
+    //     beta
+
+    //     """)
+  }
+
 //////////////////////////////////////////////////////////////////////////
 // Meta
 //////////////////////////////////////////////////////////////////////////
@@ -114,6 +134,9 @@ class CamWriterTest : Test
     verifyColOk("foo:sys::Int")
     verifyColOk("foo:concurrent::AtomicBool")
     verifyColOk("foo:Str")
+    verifyColOk("foo:Str[]")
+    verifyColOk("foo:Int[]")
+    verifyColOk("foo:sys::Bool[]")
 
     // errs
     verifyColErr("")             // empty col
