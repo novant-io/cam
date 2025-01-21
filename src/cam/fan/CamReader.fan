@@ -140,7 +140,7 @@
   ** Iterate through all the lines parsing each one into a map
   ** of column name to delimited-separated value based  on the
   ** last `readCols` and calling the given callback functions.
-  Void eachRowMap(|Str:Obj?[] row| f)
+  Void eachRowMap(|Str:Obj? row| f)
   {
     while (true)
     {
